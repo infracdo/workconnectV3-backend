@@ -1,0 +1,9 @@
+{
+    "realm": "workconnect-test",
+    "auth-server-url": "http://localhost:8081",
+    "resource": "test-workconnect-client",
+    "credentials": {
+      "secret": "e4abae47-a553-432b-b098-f436aa209201"
+    }
+  }
+  
