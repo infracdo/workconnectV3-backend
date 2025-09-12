@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="true">
+  <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+  <!-- Change path to where logs should be stored -->
+  <springProperty name="LOKI_URL" source="loki.url" />
+  <property name="APP_NAME" value="workconnect-v2" />
+
+  <!-- Console appender for plain logs -->
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>
+
+  <!-- JSON http appender with batching for API access logs -->
+  <appender name="LOKI_HTTP_BATCHED" class="com.tracker_app.tracker.logging.LokiHttpAppender">
+    <lokiUrl>${LOKI_URL}</lokiUrl>
+    <batchSize>30</batchSize>
+    <flushIntervalMs>3000</flushIntervalMs>
+    <jsonEncoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+      <providers>
+        <timestamp>
+          <fieldName>timestamp</fieldName>
+          <pattern>yyyy-MM-dd'T'HH:mm:ss.SSSZ</pattern>
+        </timestamp>
+        <threadName />
+        <logLevel />
+        <loggerName />
+        <message />
+        <mdc>
+          <includeMdcKeyName>method</includeMdcKeyName>
+          <includeMdcKeyName>uri</includeMdcKeyName>
+          <includeMdcKeyName>status</includeMdcKeyName>
+          <includeMdcKeyName>durationMs</includeMdcKeyName>
+          <includeMdcKeyName>clientIp</includeMdcKeyName>
+          <includeMdcKeyName>requestIp</includeMdcKeyName>
+          <!-- <includeMdcKeyName>userId</includeMdcKeyName>
+          <includeMdcKeyName>username</includeMdcKeyName>
+          <includeMdcKeyName>sessionId</includeMdcKeyName>
+          <includeMdcKeyName>clientId</includeMdcKeyName> -->
+          <includeMdcKeyName>userAgent</includeMdcKeyName>
+        </mdc>
+      </providers>
+    </jsonEncoder>
+  </appender>
+  
+    <!-- Debug loggers to Console -->
+  <logger name="com.tracker_app.tracker.logging.LokiHttpAppender" level="DEBUG" additivity="false">
+    <appender-ref ref="CONSOLE" />
+  </logger>
+
+  <!-- Root logger -->
+  <root level="INFO">
+    <appender-ref ref="CONSOLE" />
+  </root>
+
+  <!-- API Access logger only logs to JSON file -->
+  <logger name="com.tracker_app.tracker.Filter.ApiAccessLogFilter" level="INFO" additivity="false">
+    <appender-ref ref="LOKI_HTTP_BATCHED" />
+  </logger>
+</configuration>

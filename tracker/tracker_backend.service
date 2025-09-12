@@ -1,0 +1,18 @@
+[Unit]
+Description=Tracker-Backend APP
+
+[Service]
+User=apollo
+Group=apollo
+Type=simple
+ExecStart=/usr/bin/java -jar /home/apollo/Tracker2_Backend/tracker/target/tracker-0.0.1-SNAPSHOT.war
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target
+
+
+
+
+
+

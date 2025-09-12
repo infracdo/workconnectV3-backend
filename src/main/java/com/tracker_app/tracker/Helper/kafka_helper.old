@@ -1,0 +1,152 @@
+package com.tracker_app.tracker.Helper;
+
+import com.tracker_app.tracker.DataSource_elasticsearch.model.ElasticSiteSummary;
+import com.tracker_app.tracker.DataSource_elasticsearch.service.ElasticSiteSummary_service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.configurationprocessor.json.JSONArray;
+import org.springframework.boot.configurationprocessor.json.JSONException;
+import org.springframework.boot.configurationprocessor.json.JSONObject;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Service;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+
+@Service
+public class kafka_helper {
+
+    @Autowired
+    private KafkaTemplate<String, String> kafkaTemplate;
+    @Autowired
+    private ElasticSiteSummary_service elksite_sum_service;
+
+    @Async("asyncExecutor")
+    public String sendMessage(String message, String topic) {
+        ListenableFuture<SendResult<String, String>> future = 
+        kafkaTemplate.send(topic, message);
+      
+        future.addCallback(new ListenableFutureCallback<SendResult<String, String>>() {
+    
+            @Override
+            public void onSuccess(SendResult<String, String> result) {
+                System.out.println("Sent message=[" + message + 
+                    "] with offset=[" + result.getRecordMetadata().offset() + "]");
+                
+            }
+            @Override
+            public void onFailure(Throwable ex) {
+                System.out.println("Unable to send message=[" 
+                    + message + "] due to : " + ex.getMessage());
+            }
+        });
+        return message;
+    }
+
+    /*
+    @KafkaListener(topics = "test_topic", groupId = "test_group")
+    public void listenGroupFoo(String message) {
+        System.out.println("Received Message in group test_group: " + message);
+    }
+    */
+    @Async("asyncExecutor")
+    @KafkaListener(topics = "wcz01.public.sites_site", groupId = "test_group")
+    public void listen1(String message) throws JSONException {
+        System.out.println("Received Message in topic wcz01.public.sites_site : " + message);
+        JSONObject recieved_message = new JSONObject(message);
+        JSONObject payload = recieved_message.getJSONObject("payload");
+        JSONObject after = payload.getJSONObject("after");
+        try {
+            ElasticSiteSummary site = elksite_sum_service.findBySiteId(after.getString("site_id"));
+            site.setAddress(after.getString("address"));
+            site.setContact_nos(after.getString("contact_nos"));
+            site.setContact_person(after.getString("contact_person"));
+            site.setDate_created(after.getString("date_created"));
+            //site.setDate_last_updated(after.get(date_last_updated));
+            if(after.getString("island_group").contains("K")) site.setIsland_group("NCR");
+            else if(after.getString("island_group").contains("L")) site.setIsland_group("Luzon");
+            else if(after.getString("island_group").contains("V")) site.setIsland_group("Visayas");
+            else if(after.getString("island_group").contains("M")) site.setIsland_group("Mindanao");
+            else if(after.getString("island_group").contains("P")) site.setIsland_group("Panay");
+            else if(after.getString("island_group").contains("W")) site.setIsland_group("Palawan");
+            else if(after.getString("island_group").contains("Y")) site.setIsland_group("Leyte");
+            else if(after.getString("island_group").contains("N")) site.setIsland_group("Negros");
+            else if(after.getString("island_group").contains("C")) site.setIsland_group("Cebu");
+            else if(after.getString("island_group").contains("B")) site.setIsland_group("Bohol");
+            else if(after.getString("island_group").contains("G")) site.setIsland_group("Guimaras");
+            else if(after.getString("island_group").contains("S")) site.setIsland_group("Samar");
+            else if(after.getString("island_group").contains("R")) site.setIsland_group("Mindoro");
+            else if(after.getString("island_group").contains("Q")) site.setIsland_group("Marinduque");
+            else if(after.getString("island_group").contains("X")) site.setIsland_group("Romblon");
+            else site.setIsland_group(after.getString("island_group"));
+            site.setLatitude(Float.parseFloat(after.getString("latitude")));
+            site.setLongitude(Float.parseFloat(after.getString("longitude")));
+            site.setName(after.getString("name"));
+            if(after.getString("region").contains("NC")) site.setRegion("NCR");
+            else if(after.getString("region").contains("AR")) site.setRegion("ARMM");
+            else if(after.getString("region").contains("CA")) site.setRegion("CAR");
+            else site.setRegion(after.getString("region"));
+            site.setStatus(after.getString("status"));    
+        } catch (Exception e) {
+            ElasticSiteSummary site = new ElasticSiteSummary();
+            site.setAddress(after.getString("address"));
+            site.setContact_nos(after.getString("contact_nos"));
+            site.setContact_person(after.getString("contact_person"));
+            site.setDate_created(after.getString("date_created"));
+            //site.setDate_last_updated(after.get(date_last_updated));
+            if(after.getString("island_group").contains("K")) site.setIsland_group("NCR");
+            else if(after.getString("island_group").contains("L")) site.setIsland_group("Luzon");
+            else if(after.getString("island_group").contains("V")) site.setIsland_group("Visayas");
+            else if(after.getString("island_group").contains("M")) site.setIsland_group("Mindanao");
+            else if(after.getString("island_group").contains("P")) site.setIsland_group("Panay");
+            else if(after.getString("island_group").contains("W")) site.setIsland_group("Palawan");
+            else if(after.getString("island_group").contains("Y")) site.setIsland_group("Leyte");
+            else if(after.getString("island_group").contains("N")) site.setIsland_group("Negros");
+            else if(after.getString("island_group").contains("C")) site.setIsland_group("Cebu");
+            else if(after.getString("island_group").contains("B")) site.setIsland_group("Bohol");
+            else if(after.getString("island_group").contains("G")) site.setIsland_group("Guimaras");
+            else if(after.getString("island_group").contains("S")) site.setIsland_group("Samar");
+            else if(after.getString("island_group").contains("R")) site.setIsland_group("Mindoro");
+            else if(after.getString("island_group").contains("Q")) site.setIsland_group("Marinduque");
+            else if(after.getString("island_group").contains("X")) site.setIsland_group("Romblon");
+            else site.setIsland_group(after.getString("island_group"));
+            site.setLatitude(Float.parseFloat(after.getString("latitude")));
+            site.setLongitude(Float.parseFloat(after.getString("longitude")));
+            site.setName(after.getString("name"));
+            if(after.getString("region").contains("NC")) site.setRegion("NCR");
+            else if(after.getString("region").contains("AR")) site.setRegion("ARMM");
+            else if(after.getString("region").contains("CA")) site.setRegion("CAR");
+            else site.setRegion(after.getString("region"));
+            site.setStatus(after.getString("status"));
+        }
+    }
+    @Async("asyncExecutor")
+    @KafkaListener(topics = "wcz01.public.sites_interface", groupId = "test_group")
+    public void listen2(String message) {
+        System.out.println("Received Message in topic wcz01.public.sites_interface : " + message);
+    }
+    /*
+    @KafkaListener(topics = "wcz01_configs", groupId = "test_group")
+    public void listen2(String message) {
+        System.out.println("Received Message in topic wcz01_configs  : " + message);
+    }
+    @KafkaListener(topics = "wcz01_offsets", groupId = "test_group")
+    public void listen3(String message) {
+        System.out.println("Received Message in topic wcz01_offsets : " + message);
+    }
+    @KafkaListener(topics = "wcz01_statuses", groupId = "test_group")
+    public void listen4(String message) {
+        System.out.println("Received Message in topic wcz01_statuses : " + message);
+    }
+    @KafkaListener(topics = "workconnect_topic", groupId = "test_group")
+    public void listen5(String message) {
+        System.out.println("Received Message in topic workconnect_topic : " + message);
+    }
+    @KafkaListener(topics = "wcsitereports_dev", groupId = "test_group")
+    public void listen6(String message) {
+        System.out.println("Received Message in topic wcsitereports_dev : " + message);
+    }
+    */
+}
